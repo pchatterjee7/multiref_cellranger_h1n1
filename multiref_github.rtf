@@ -1,0 +1,69 @@
+make multispecies reference with cellranger:
+## Common commands to create the final multi-reference
+cellranger mkref --genome=GRCh38 --fasta=Homo_sapiens.GRCh38.dna.primary_assembly.fa --genes=Homo_sapiens.GRCh38.105.filtered.gtf \
+                 --genome=h1n1 --fasta=influenza.fna --genes=influenza.filtered.gtf
+
+                 cellranger mkref --genome=GRCh38 --fasta=Homo_sapiens.GRCh38.dna.primary_assembly.fa --genes=Homo_sapiens.GRCh38.105.filtered.gtf \
+                --genome=H1N1A --fasta=influenza.fna --genes=influenza.filtered.gtf \
+                --species=GRCh38,H1N1A
+
+
+
+####### download Human reference fasta and gtf files: https://useast.ensembl.org/Homo_sapiens/Info/Index
+
+download h1n1 genome files: https://www.ncbi.nlm.nih.gov/nuccore/AF250365.2?report=fasta
+mkdir multiref
+cd multiref
+wget https://ftp.ensembl.org/pub/release-109/gtf/homo_sapiens/Homo_sapiens.GRCh38.109.gtf.gz
+wget https://ftp.ensembl.org/pub/release-109/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+
+gunzip Homo_sapiens.GRCh38.109.gtf.gz
+gunzip Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+
+# create GTF for human reference
+  cellranger mkgtf \
+  Homo_sapiens.GRCh38.109.gtf \
+  Homo_sapiens.GRCh38.109.filtered.gtf \
+  --attribute=gene_biotype:protein_coding
+
+
+################# H1N1 genes added to the human reference genome #####################################
+# download the fasta sequences from :
+1. https://www.ncbi.nlm.nih.gov/nuccore/8486138
+2. https://www.ncbi.nlm.nih.gov/nuccore/8486134
+3. https://www.ncbi.nlm.nih.gov/nuccore/8486136
+4. https://www.ncbi.nlm.nih.gov/nuccore/8486125
+5. https://www.ncbi.nlm.nih.gov/nuccore/8486129
+6. https://www.ncbi.nlm.nih.gov/nuccore/8486127
+7. https://www.ncbi.nlm.nih.gov/nuccore/NC_002016
+8. https://www.ncbi.nlm.nih.gov/nuccore/8486131
+
+#take these files to the server and convert to .fa
+# check their nucleotide counts:
+
+# Add the h1n1.fa to human genome
+cd /storage/home/multiref/
+cp H1N1.fa.txt H1N1.fa
+cp Homo_sapiens.GRCh38.dna.primary_assembly.fa Homo_sapiens.GRCh38.dna.primary_assembly_h1n1.fa
+cat H1N1.fa >> Homo_sapiens.GRCh38.dna.primary_assembly_h1n1.fa
+grep ">" Homo_sapiens.GRCh38.dna.primary_assembly_h1n1.fa
+
+
+echo -e 'PB2\tunknown\texon\t1\t2374\t.\t+\t.\tgene_id "PB2"; transcript_id "PB2"; gene_name "PB2"; gene_biotype "protein_coding";
+  PB1\tunknown\texon\t1\t2374\t.\t+\t.\tgene_id "PB1"; transcript_id "PB1"; gene_name "PB1"; gene_biotype "protein_coding";
+  PA\tunknown\texon\t1\t2265\t.\t+\t.\tgene_id "PA"; transcript_id "PA"; gene_name "PA"; gene_biotype "protein_coding";
+  NP\tunknown\texon\t1\t1587\t.\t+\t.\tgene_id "NP"; transcript_id "NP"; gene_name "NP"; gene_biotype "protein_coding";
+  NEP\tunknown\texon\t1\t902\t.\t+\t.\tgene_id "NEP"; transcript_id "NEP"; gene_name "NEP"; gene_biotype "protein_coding";
+  NA\tunknown\texon\t1\t1434\t.\t+\t.\tgene_id "NA"; transcript_id "NA"; gene_name "NA"; gene_biotype "protein_coding";
+  M2\tunknown\texon\t1\t1041\t.\t+\t.\tgene_id "M2"; transcript_id "M2"; gene_name "M2"; gene_biotype "protein_coding";
+  HA\tunknown\texon\t1\t1803\t.\t+\t.\tgene_id "HA"; transcript_id "HA"; gene_name "HA"; gene_biotype "protein_coding";' > H1N1.gtf
+
+# modify the GTF
+cp Homo_sapiens.GRCh38.109.filtered.gtf Homo_sapiens.GRCh38.109.filtered.h1n1.gtf
+cat H1N1.gtf >> Homo_sapiens.GRCh38.109.filtered.h1n1.gtf
+tail Homo_sapiens.GRCh38.109.filtered.h1n1.gtf
+
+# create reference
+  cellranger mkref --genome=GRCh38_H1N1_ref \
+  --fasta=Homo_sapiens.GRCh38.dna.primary_assembly_h1n1.fa\
+  --genes=Homo_sapiens.GRCh38.109.filtered.h1n1.gtf
